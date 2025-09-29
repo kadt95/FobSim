@@ -1,3 +1,6 @@
+This repository is for a thesis project. The original can be found at: https://github.com/sed-szeged/FobSim . 
+Below is the original README.
+
 # FobSim
 This project aims to introduce a reliable Fog-enhanced Blockchain simulation environment, namely FoBSim.
 
