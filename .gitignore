@@ -1,0 +1,10 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+
+# Python / Pycharm
+.idea/
+__pycache__/
+
+# Temporary files
+temporary/
