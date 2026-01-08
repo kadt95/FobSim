@@ -111,10 +111,10 @@ def trigger_pos_miners(the_miners_list, the_type_of_consensus, expected_chain_le
 def trigger_poa_miners(the_miners_list, the_type_of_consensus, expected_chain_length, numOfTXperBlock,
                        blockchainFunction):
     for counter in range(expected_chain_length):
-        for obj in the_miners_list:
-            if obj.local_mempool:
-                obj.build_block(numOfTXperBlock, the_miners_list, the_type_of_consensus,
-                                blockchainFunction, expected_chain_length, None)
+        obj = random.choice(the_miners_list)
+        if obj.local_mempool:
+            obj.build_block(numOfTXperBlock, the_miners_list, the_type_of_consensus,
+                                                blockchainFunction, expected_chain_length, None)
         output.simulation_progress(counter, expected_chain_length)
 
 

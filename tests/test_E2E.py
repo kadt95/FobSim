@@ -37,7 +37,7 @@ def run_main():
     print("elapsed time = " + str(main.elapsed_time) + " seconds")
 
 
-confirmed_bugged=[("2","1","3"),("3","1","3"),("3","2","3"),("4","1","2"),("4","2","2"),("2","1","4")]
+confirmed_bugged=[("3","1","3"),("3","2","3"),("4","1","2"),("4","2","2"),("2","1","4")]
 
 @pytest.mark.parametrize("consensus_algorithm",["1","2","3","4","5"])
 @pytest.mark.parametrize("network_placement",["1","2"])
