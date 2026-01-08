@@ -38,7 +38,7 @@ def accumulate_transactions(num_of_tx_per_block, this_mem_pool, blockchain_funct
                 lst_of_transactions.append(eval(lst_of_transactions[2]))
                 produced_transaction = ['End-user address: ' + str(lst_of_transactions[0]) + '.' + str(lst_of_transactions[1]),
                                         'Requested computational task: ' + str(lst_of_transactions[2]), 'Result: '
-                                        + str(lst_of_transactions[3]), "miner: " + str(miner_address)]
+                                        + str(lst_of_transactions[4]), "miner: " + str(miner_address)]
                 return produced_transaction
             except:
                 print("error in accumulating new TXs:")
