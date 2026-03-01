@@ -49,7 +49,7 @@ def accumulate_transactions(num_of_tx_per_block, this_mem_pool, blockchain_funct
                 try:
                     selected_tx = random.choice(this_mem_pool)
                     if selected_tx not in lst_of_transactions:
-                        lst_of_transactions.append(random.choice(this_mem_pool))
+                        lst_of_transactions.append(selected_tx)
                     this_mem_pool.remove(selected_tx)
                     i += 1
                 except:
@@ -88,11 +88,18 @@ def trigger_pos_miners(the_miners_list, the_type_of_consensus, expected_chain_le
         randomly_chosen_miners = []
         x = int(round((len(the_miners_list) / 2), 0))
         j = 0
+        miners_with_empty_mempools = []
         while j < x:
+            if len(miners_with_empty_mempools)==len(the_miners_list):
+                break
             randomly_chosen_miner = random.choice(the_miners_list)
             if randomly_chosen_miner.local_mempool:
                 randomly_chosen_miners.append(randomly_chosen_miner)
                 j += 1
+            elif randomly_chosen_miner not in miners_with_empty_mempools:
+                miners_with_empty_mempools.append(randomly_chosen_miner)
+        if len(miners_with_empty_mempools) == len(the_miners_list):
+            break
         biggest_stake = 0
         final_chosen_miner = the_miners_list[0]
         temp_file_py = modification.read_file('temporary/miners_stake_amounts.json')
