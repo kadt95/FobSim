@@ -21,6 +21,7 @@ class Miner:
         self.delegates = None
         self.adversary = False
         self.local_mempool = []
+        self.successful_gossip=False
 
     def build_block(self, num_of_tx_per_block, miner_list, type_of_consensus, blockchain_function, expected_chain_length, AI_assisted_mining_wanted):
         if type_of_consensus == 3 and not self.isAuthorized:
@@ -65,6 +66,7 @@ class Miner:
 
     def receive_new_block(self, new_block, type_of_consensus, miner_list, blockchain_function, expected_chain_length):
         block_already_received = False
+        self.successful_gossip=False
         local_chain_temporary_file = modification.read_file(str("temporary/" + self.address + "_local_chain.json"))
         # print("a new block is received from " + str(new_block['generator_id']))
         condition_1 = (len(local_chain_temporary_file) == 0) and (new_block['Header']['generator_id'] == 'The Network')
@@ -81,7 +83,7 @@ class Miner:
                     block_already_received = True
                     break
             if not block_already_received:
-                if new_consensus_module.block_is_valid(type_of_consensus, new_block, self.top_block, self.next_pos_block_from, miner_list, self.delegates):
+                if new_consensus_module.block_is_valid(type_of_consensus, new_block, self.top_block, self.next_pos_block_from, miner_list, self.delegates) or (self.successful_gossip and self.top_block==new_block):
                     self.add(new_block, blockchain_function, expected_chain_length, miner_list)
                     time.sleep(self.trans_delay)
                     for tx in new_block["Body"]["transactions"]:
@@ -155,6 +157,7 @@ class Miner:
             confirmed_chain_from = temporary_global_longest_chain['from']
             modification.rewrite_file(str("temporary/" + self.address + "_local_chain.json"), confirmed_chain)
             self.top_block = confirmed_chain[str(len(confirmed_chain) - 1)]
+            self.successful_gossip=True
             output.local_chain_is_updated(self.address, len(confirmed_chain))
             if blockchain_function == 3:
                 user_wallets_temp_file = modification.read_file(str("temporary/" + confirmed_chain_from + "_users_wallets.json"))
