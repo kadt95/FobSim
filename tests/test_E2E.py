@@ -59,6 +59,6 @@ def test_main(mock_input,blockchain_network,network_placement,consensus_algorith
     #testing with different sim parameters
 
     if not (blockchain_network=="1" and network_placement=="1" and consensus_algorithm=="1"):
-        reload("main")
+        reload(main)
         main.Fog.mempool.MemPool.clear()
     run_main()
