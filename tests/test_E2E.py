@@ -2,8 +2,7 @@ import sys
 import pytest
 import os
 from unittest.mock import patch
-from IPython.lib.deepreload import reload
-
+import deepreload
 
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -59,6 +58,6 @@ def test_main(mock_input,blockchain_network,network_placement,consensus_algorith
     #testing with different sim parameters
 
     if not (blockchain_network=="1" and network_placement=="1" and consensus_algorithm=="1"):
-        reload(main)
+        deepreload.reload("main")
         main.Fog.mempool.MemPool.clear()
     run_main()
