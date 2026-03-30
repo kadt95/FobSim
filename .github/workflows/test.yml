@@ -1,0 +1,24 @@
+name: Run tests
+
+on: 
+  push:
+    branches:
+      - main
+  
+jobs:
+  tests:
+
+    runs-on: ubuntu-latest
+    
+
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pytest
+        run: pip install pytest
+      - name: run tests
+        run: pytest -vv --durations=0 tests/test_E2E.py
+      
