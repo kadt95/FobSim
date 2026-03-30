@@ -5,6 +5,3 @@
 # Python / Pycharm
 .idea/
 __pycache__/
-
-# Temporary files
-temporary/
