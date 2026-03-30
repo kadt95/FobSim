@@ -1,0 +1,5 @@
+cryptography==46.0.6
+ipython==8.12.3
+pandas==3.0.1
+pytest==8.4.2
+rsa==4.9.1
