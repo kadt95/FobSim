@@ -10,8 +10,6 @@ import PoET_server
 import AIModule
 import copy
 
-# NON-MODIFIABLE PART:
-
 num_of_consensus = 0
 
 
@@ -425,11 +423,3 @@ def block_is_valid(type_of_consensus, new_block, top_block, next_pos_block_from,
 def dummy_block_is_valid(block):
     return block['Header']['dummy_new_proof'] == encryption_module.hashing_function(block['Body'])
 
-# 8- Add other type of proof that could be validated by the 'block_is_valid' function.
-# To do that, you can implement a function that generates the proof as in the
-# 'pow_mining' function in the NON-MODIFIABLE area above^^^^^^. Once implemented, the
-# 'block_is_valid' function must be modified accordingly so that valid blocks only are added.
-
-
-def dummy_proof_generator_function(block):
-    return encryption_module.hashing_function(block['Body'])

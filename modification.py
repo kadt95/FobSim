@@ -19,6 +19,8 @@ def return_key():
 
 def initiate_files(gossip_activated):
     for filename in os.listdir('temporary'):
+        if filename == ".gitignore":
+            continue
         file_path = os.path.join('temporary', filename)
         try:
             if os.path.isfile(file_path) or os.path.islink(file_path):

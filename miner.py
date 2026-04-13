@@ -2,7 +2,6 @@ from idlelib.pyparse import trans
 
 import blockchain
 import time
-import new_consensus_module
 import output
 import encryption_module
 import modification
@@ -25,22 +24,22 @@ class Miner:
         self.local_mempool = []
         self.successful_gossip=False
 
-    def build_block(self, num_of_tx_per_block, miner_list, type_of_consensus, blockchain_function, expected_chain_length, AI_assisted_mining_wanted):
+    def build_block(self, num_of_tx_per_block, miner_list, type_of_consensus, blockchain_function, expected_chain_length, AI_assisted_mining_wanted, chosen_consensus):
         if type_of_consensus == 3 and not self.isAuthorized:
             output.unauthorized_miner_msg(self.address)
         elif type_of_consensus == 4:
             waiting_time = (self.top_block['Body']['timestamp'] + self.waiting_times[self.top_block['Header']['blockNo'] + 1]) - time.time()
             if waiting_time <= 0:
-                self.continue_building_block(num_of_tx_per_block, miner_list, type_of_consensus, blockchain_function, expected_chain_length, AI_assisted_mining_wanted)
+                self.continue_building_block(num_of_tx_per_block, miner_list, type_of_consensus, blockchain_function, expected_chain_length, AI_assisted_mining_wanted, chosen_consensus)
         else:
-            self.continue_building_block(num_of_tx_per_block, miner_list, type_of_consensus, blockchain_function, expected_chain_length, AI_assisted_mining_wanted)
+            self.continue_building_block(num_of_tx_per_block, miner_list, type_of_consensus, blockchain_function, expected_chain_length, AI_assisted_mining_wanted, chosen_consensus)
 
-    def continue_building_block(self, num_of_tx_per_block, miner_list, type_of_consensus, blockchain_function, expected_chain_length, AI_assisted_mining_wanted):
-        accumulated_transactions = new_consensus_module.accumulate_transactions(num_of_tx_per_block, self.local_mempool, blockchain_function,
+    def continue_building_block(self, num_of_tx_per_block, miner_list, type_of_consensus, blockchain_function, expected_chain_length, AI_assisted_mining_wanted, chosen_consensus):
+        accumulated_transactions = chosen_consensus.accumulate_transactions(num_of_tx_per_block, self.local_mempool, blockchain_function,
                                                                                 self.address)
         if accumulated_transactions:
             transactions = accumulated_transactions
-            new_block = self.abstract_block_building(blockchain_function, transactions, miner_list, type_of_consensus, AI_assisted_mining_wanted)
+            new_block = self.abstract_block_building(blockchain_function, transactions, miner_list, type_of_consensus, AI_assisted_mining_wanted, chosen_consensus)
             output.block_info(new_block, type_of_consensus)
             if blockchain_function == 2:
                 tx = new_block["Body"]["transactions"][1].split()[-1]
@@ -61,14 +60,14 @@ class Miner:
             for elem in miner_list:
                 if elem.address in self.neighbours:
                     elem.receive_new_block(new_block, type_of_consensus, miner_list, blockchain_function,
-                                           expected_chain_length)
+                                           expected_chain_length, chosen_consensus)
 
-    def abstract_block_building(self, blockchain_function, transactions, miner_list, type_of_consensus, AI_assisted_mining_wanted):
+    def abstract_block_building(self, blockchain_function, transactions, miner_list, type_of_consensus, AI_assisted_mining_wanted, chosen_consensus):
         if blockchain_function == 3:
             transactions = self.validate_transactions(transactions, "generator")
         if self.gossiping:
             self.gossip(blockchain_function, miner_list)
-        new_block = new_consensus_module.generate_new_block(transactions, self.address,
+        new_block = chosen_consensus.generate_new_block_start(transactions, self.address,
                                                             self.top_block['Header']['hash'], type_of_consensus,
                                                             AI_assisted_mining_wanted, self.adversary)
         if type_of_consensus == 4:
@@ -76,7 +75,7 @@ class Miner:
                 new_block['Body']['previous_hash'], self.address)
         return new_block
 
-    def receive_new_block(self, new_block, type_of_consensus, miner_list, blockchain_function, expected_chain_length):
+    def receive_new_block(self, new_block, type_of_consensus, miner_list, blockchain_function, expected_chain_length, chosen_consensus):
         block_already_received = False
         self.successful_gossip=False
         local_chain_temporary_file = modification.read_file(str("temporary/" + self.address + "_local_chain.json"))
@@ -95,7 +94,7 @@ class Miner:
                     block_already_received = True
                     break
             if not block_already_received:
-                if new_consensus_module.block_is_valid(type_of_consensus, new_block, self.top_block, self.next_pos_block_from, miner_list, self.delegates) or (self.successful_gossip and self.top_block==new_block):
+                if chosen_consensus.block_is_valid(type_of_consensus, new_block, self.top_block, self.next_pos_block_from, miner_list, self.delegates) or (self.successful_gossip and self.top_block==new_block):
                     self.add(new_block, blockchain_function, expected_chain_length, miner_list)
                     time.sleep(self.trans_delay)
                     if blockchain_function == 2:
@@ -112,7 +111,7 @@ class Miner:
                                 pass
                     for elem in miner_list:
                         if elem.address in self.neighbours:
-                            elem.receive_new_block(new_block, type_of_consensus, miner_list, blockchain_function, expected_chain_length)
+                            elem.receive_new_block(new_block, type_of_consensus, miner_list, blockchain_function, expected_chain_length, chosen_consensus)
 
     def validate_transactions(self, list_of_new_transactions, miner_role):
         user_wallets_temporary_file = modification.read_file(str("temporary/" + self.address + "_users_wallets.json"))

@@ -7,8 +7,8 @@ import output
 from math import ceil
 import time
 import modification
-import new_consensus_module
-
+from consensus_algorithm_base import ConsensusAlgorithmBase
+import consensus_algorithms
 
 data = modification.read_file("Sim_parameters.json")
 list_of_end_users = []
@@ -204,10 +204,10 @@ def initiate_genesis_block(AI_wanted):
     genesis_transactions = ["genesis_block"]
     for i in range(len(miner_list)):
         genesis_transactions.append(miner_list[i].address)
-    genesis_block = new_consensus_module.generate_new_block(genesis_transactions, 'The Network', 0, type_of_consensus, AI_wanted, False)
+    genesis_block = chosen_consensus.generate_new_block_start(genesis_transactions, 'The Network', 0, type_of_consensus, AI_wanted, False)
     output.block_info(genesis_block, type_of_consensus)
     for elem in miner_list:
-        elem.receive_new_block(genesis_block, type_of_consensus, miner_list, blockchainFunction, expected_chain_length)
+        elem.receive_new_block(genesis_block, type_of_consensus, miner_list, blockchainFunction, expected_chain_length, chosen_consensus)
     output.genesis_block_generation()
 
 
@@ -240,10 +240,13 @@ def inform_miners_of_users_wallets():
 if __name__ == '__main__':
     user_input()
     initiate_network()
-    type_of_consensus = new_consensus_module.choose_consensus()
+    consensus_algorithms = sorted(ConsensusAlgorithmBase.__subclasses__(), key=lambda ca: int(ca.orderNo))
+    type_of_consensus = ConsensusAlgorithmBase.choose_consensus(consensus_algorithms)
+    chosen_consensus = consensus_algorithms[type_of_consensus-1]()
+    chosen_consensus.prepare_necessary_files()
     trans_delay = define_trans_delay(blockchainPlacement)
     miner_list = initiate_miners()
-    AI_assisted_mining_wanted = give_miners_authorization(miner_list, type_of_consensus)
+    AI_assisted_mining_wanted = give_miners_authorization(miner_list, chosen_consensus)
     inform_miners_of_users_wallets()
     blockchain.stake(miner_list, type_of_consensus)
     initiate_genesis_block(AI_assisted_mining_wanted)
@@ -251,9 +254,10 @@ if __name__ == '__main__':
     time_start = time.time()
     if blockchainFunction == 2:
         expected_chain_length = ceil((num_of_users_per_fog_node * NumOfTaskPerUser * NumOfFogNodes))
-    new_consensus_module.miners_trigger(miner_list, type_of_consensus, expected_chain_length, Parallel_PoW_mining,
-                                        numOfTXperBlock, blockchainFunction, poet_block_time, Asymmetric_key_length,
-                                        number_of_DPoS_delegates, AI_assisted_mining_wanted)
+
+    chosen_consensus.miners_trigger_start(miner_list, type_of_consensus, expected_chain_length, Parallel_PoW_mining,
+                                          numOfTXperBlock, blockchainFunction, poet_block_time, Asymmetric_key_length,
+                                          number_of_DPoS_delegates, AI_assisted_mining_wanted, chosen_consensus)
 
     blockchain.award_winning_miners(len(miner_list), miner_list)
     blockchain.fork_analysis(miner_list)
