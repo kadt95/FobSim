@@ -48,35 +48,27 @@ class ConsensusAlgorithmBase(ABC):
                            is_adversary, new_block):
         pass
 
-    def miners_trigger_start(self, the_miners_list, the_type_of_consensus, expected_chain_length, Parallel_PoW_mining,
-                       numOfTXperBlock, blockchainFunction, poet_block_time, Asymmetric_key_length,
-                       number_of_DPoS_delegates, AI_assisted_mining_wanted, chosen_consensus):
+    def miners_trigger_start(self, simdata):
 
         output.mempool_info(mempool.MemPool)
-        for obj in the_miners_list:
+        for obj in simdata.miner_list:
             obj.local_mempool = copy.deepcopy(mempool.MemPool)
 
-        self.miners_trigger(the_miners_list, the_type_of_consensus, expected_chain_length, Parallel_PoW_mining,
-                       numOfTXperBlock, blockchainFunction, poet_block_time, Asymmetric_key_length,
-                       number_of_DPoS_delegates, AI_assisted_mining_wanted , chosen_consensus)
+        self.miners_trigger(simdata)
 
     @abstractmethod
-    def miners_trigger(self, the_miners_list, the_type_of_consensus, expected_chain_length, Parallel_PoW_mining,
-                       numOfTXperBlock, blockchainFunction, poet_block_time, Asymmetric_key_length,
-                       number_of_DPoS_delegates, AI_assisted_mining_wanted, chosen_consensus):
+    def miners_trigger(self, simdata):
         pass
 
 
     @staticmethod
-    def trigger_dummy_miners(the_miners_list, numOfTXperBlock, the_type_of_consensus, blockchainFunction,
-                             expected_chain_length):
+    def trigger_dummy_miners(simdata):
         counter = -1
-        for obj in the_miners_list:
+        for obj in simdata.miner_list:
             if obj.local_mempool:
-                obj.build_block(numOfTXperBlock, the_miners_list, the_type_of_consensus, blockchainFunction,
-                                expected_chain_length, None)
+                obj.build_block(simdata)
                 counter += 1
-        output.simulation_progress(counter, expected_chain_length)
+        output.simulation_progress(counter, simdata.expected_chain_length)
 
     @abstractmethod
     def block_is_valid(self, type_of_consensus, new_block, top_block, next_pos_block_from, miner_list, delegates):

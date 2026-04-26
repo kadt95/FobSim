@@ -1,5 +1,3 @@
-from idlelib.pyparse import trans
-
 import blockchain
 import time
 import output
@@ -24,24 +22,24 @@ class Miner:
         self.local_mempool = []
         self.successful_gossip=False
 
-    def build_block(self, num_of_tx_per_block, miner_list, type_of_consensus, blockchain_function, expected_chain_length, AI_assisted_mining_wanted, chosen_consensus):
-        if type_of_consensus == 3 and not self.isAuthorized:
+    def build_block(self, simdata):
+        if simdata.type_of_consensus == 3 and not self.isAuthorized:
             output.unauthorized_miner_msg(self.address)
-        elif type_of_consensus == 4:
+        elif simdata.type_of_consensus == 4:
             waiting_time = (self.top_block['Body']['timestamp'] + self.waiting_times[self.top_block['Header']['blockNo'] + 1]) - time.time()
             if waiting_time <= 0:
-                self.continue_building_block(num_of_tx_per_block, miner_list, type_of_consensus, blockchain_function, expected_chain_length, AI_assisted_mining_wanted, chosen_consensus)
+                self.continue_building_block(simdata)
         else:
-            self.continue_building_block(num_of_tx_per_block, miner_list, type_of_consensus, blockchain_function, expected_chain_length, AI_assisted_mining_wanted, chosen_consensus)
+            self.continue_building_block(simdata)
 
-    def continue_building_block(self, num_of_tx_per_block, miner_list, type_of_consensus, blockchain_function, expected_chain_length, AI_assisted_mining_wanted, chosen_consensus):
-        accumulated_transactions = chosen_consensus.accumulate_transactions(num_of_tx_per_block, self.local_mempool, blockchain_function,
+    def continue_building_block(self, simdata):
+        accumulated_transactions = simdata.chosen_consensus.accumulate_transactions(simdata.params.numOfTXperBlock, self.local_mempool, simdata.blockchainFunction,
                                                                                 self.address)
         if accumulated_transactions:
             transactions = accumulated_transactions
-            new_block = self.abstract_block_building(blockchain_function, transactions, miner_list, type_of_consensus, AI_assisted_mining_wanted, chosen_consensus)
-            output.block_info(new_block, type_of_consensus)
-            if blockchain_function == 2:
+            new_block = self.abstract_block_building(transactions, simdata)
+            output.block_info(new_block, simdata.type_of_consensus)
+            if simdata.blockchainFunction == 2:
                 tx = new_block["Body"]["transactions"][1].split()[-1]
                 for transaction in self.local_mempool:
                     if transaction[2] == tx:
@@ -57,35 +55,34 @@ class Miner:
                     except Exception as e:
                         pass
             time.sleep(self.trans_delay)
-            for elem in miner_list:
+            for elem in simdata.miner_list:
                 if elem.address in self.neighbours:
-                    elem.receive_new_block(new_block, type_of_consensus, miner_list, blockchain_function,
-                                           expected_chain_length, chosen_consensus)
+                    elem.receive_new_block(new_block, simdata)
 
-    def abstract_block_building(self, blockchain_function, transactions, miner_list, type_of_consensus, AI_assisted_mining_wanted, chosen_consensus):
-        if blockchain_function == 3:
+    def abstract_block_building(self, transactions, simdata):
+        if simdata.blockchainFunction == 3:
             transactions = self.validate_transactions(transactions, "generator")
         if self.gossiping:
-            self.gossip(blockchain_function, miner_list)
-        new_block = chosen_consensus.generate_new_block_start(transactions, self.address,
-                                                            self.top_block['Header']['hash'], type_of_consensus,
-                                                            AI_assisted_mining_wanted, self.adversary)
-        if type_of_consensus == 4:
+            self.gossip(simdata.blockchainFunction, simdata.miner_list)
+        new_block = simdata.chosen_consensus.generate_new_block_start(transactions, self.address,
+                                                            self.top_block['Header']['hash'], simdata.type_of_consensus,
+                                                            simdata.AI_assisted_mining_wanted, self.adversary)
+        if simdata.type_of_consensus == 4:
             new_block['Header']['PoET'] = encryption_module.retrieve_signature_from_saved_key(
                 new_block['Body']['previous_hash'], self.address)
         return new_block
 
-    def receive_new_block(self, new_block, type_of_consensus, miner_list, blockchain_function, expected_chain_length, chosen_consensus):
+    def receive_new_block(self, new_block, simdata):
         block_already_received = False
         self.successful_gossip=False
         local_chain_temporary_file = modification.read_file(str("temporary/" + self.address + "_local_chain.json"))
         # print("a new block is received from " + str(new_block['generator_id']))
         condition_1 = (len(local_chain_temporary_file) == 0) and (new_block['Header']['generator_id'] == 'The Network')
         if condition_1:
-            self.add(new_block, blockchain_function, expected_chain_length, miner_list)
+            self.add(new_block, simdata.blockchainFunction, simdata.expected_chain_length, simdata.miner_list)
         else:
             if self.gossiping:
-                self.gossip(blockchain_function, miner_list)
+                self.gossip(simdata.blockchainFunction, simdata.miner_list)
             list_of_hashes_in_local_chain = []
             for key in local_chain_temporary_file:
                 read_hash = local_chain_temporary_file[key]['Header']['hash']
@@ -94,10 +91,10 @@ class Miner:
                     block_already_received = True
                     break
             if not block_already_received:
-                if chosen_consensus.block_is_valid(type_of_consensus, new_block, self.top_block, self.next_pos_block_from, miner_list, self.delegates) or (self.successful_gossip and self.top_block==new_block):
-                    self.add(new_block, blockchain_function, expected_chain_length, miner_list)
+                if simdata.chosen_consensus.block_is_valid(simdata.type_of_consensus, new_block, self.top_block, self.next_pos_block_from, simdata.miner_list, self.delegates) or (self.successful_gossip and self.top_block==new_block):
+                    self.add(new_block, simdata.blockchainFunction, simdata.expected_chain_length, simdata.miner_list)
                     time.sleep(self.trans_delay)
-                    if blockchain_function == 2:
+                    if simdata.blockchainFunction == 2:
                         tx = new_block["Body"]["transactions"][1].split()[-1]
                         for transaction in self.local_mempool:
                             if transaction[2] == tx:
@@ -109,9 +106,9 @@ class Miner:
                                 self.local_mempool.remove(tx)
                             except Exception as e:
                                 pass
-                    for elem in miner_list:
+                    for elem in simdata.miner_list:
                         if elem.address in self.neighbours:
-                            elem.receive_new_block(new_block, type_of_consensus, miner_list, blockchain_function, expected_chain_length, chosen_consensus)
+                            elem.receive_new_block(new_block, simdata)
 
     def validate_transactions(self, list_of_new_transactions, miner_role):
         user_wallets_temporary_file = modification.read_file(str("temporary/" + self.address + "_users_wallets.json"))

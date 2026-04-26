@@ -24,24 +24,20 @@ class PoW(ConsensusAlgorithmBase):
         new_block = self.pow_mining(new_block, AI_assisted_mining_wanted, is_adversary)
         return new_block
 
-    def miners_trigger(self, the_miners_list, the_type_of_consensus, expected_chain_length, Parallel_PoW_mining,
-                       numOfTXperBlock, blockchainFunction, poet_block_time, Asymmetric_key_length,
-                       number_of_DPoS_delegates, AI_assisted_mining_wanted, chosen_consensus):
+    def miners_trigger(self, simdata):
         mining_processes = []
-        for counter in range(expected_chain_length):
-            obj = random.choice(the_miners_list)
-            if Parallel_PoW_mining:
+        for counter in range(simdata.expected_chain_length):
+            obj = random.choice(simdata.miner_list)
+            if simdata.params.Parallel_PoW_mining:
                 # parallel approach
                 process = Process(target=obj.build_block, args=(
-                    numOfTXperBlock, the_miners_list, the_type_of_consensus, blockchainFunction,
-                    expected_chain_length, AI_assisted_mining_wanted, chosen_consensus))
+                    simdata))
                 process.start()
                 mining_processes.append(process)
             else:
                 # non-parallel approach
-                obj.build_block(numOfTXperBlock, the_miners_list, the_type_of_consensus,
-                                blockchainFunction, expected_chain_length, AI_assisted_mining_wanted, chosen_consensus)
-            output.simulation_progress(counter, expected_chain_length)
+                obj.build_block(simdata)
+            output.simulation_progress(counter, simdata.expected_chain_length)
         for process in mining_processes:
             process.join()
 
@@ -91,38 +87,35 @@ class PoS(ConsensusAlgorithmBase):
         new_block['Header']['hash'] = encryption_module.hashing_function(new_block['Body'])
         return new_block
 
-    def miners_trigger(self, the_miners_list, the_type_of_consensus, expected_chain_length, Parallel_PoW_mining,
-                       numOfTXperBlock, blockchainFunction, poet_block_time, Asymmetric_key_length,
-                       number_of_DPoS_delegates, AI_assisted_mining_wanted, chosen_consensus):
-        for counter in range(expected_chain_length):
+    def miners_trigger(self, simdata):
+        for counter in range(simdata.expected_chain_length):
             randomly_chosen_miners = []
-            x = int(round((len(the_miners_list) / 2), 0))
+            x = int(round((len(simdata.miner_list) / 2), 0))
             j = 0
             miners_with_empty_mempools = []
             while j < x:
-                if len(miners_with_empty_mempools) == len(the_miners_list):
+                if len(miners_with_empty_mempools) == len(simdata.miner_list):
                     break
-                randomly_chosen_miner = random.choice(the_miners_list)
+                randomly_chosen_miner = random.choice(simdata.miner_list)
                 if randomly_chosen_miner.local_mempool:
                     randomly_chosen_miners.append(randomly_chosen_miner)
                     j += 1
                 elif randomly_chosen_miner not in miners_with_empty_mempools:
                     miners_with_empty_mempools.append(randomly_chosen_miner)
-            if len(miners_with_empty_mempools) == len(the_miners_list):
+            if len(miners_with_empty_mempools) == len(simdata.miner_list):
                 break
             biggest_stake = 0
-            final_chosen_miner = the_miners_list[0]
+            final_chosen_miner = simdata.miner_list[0]
             temp_file_py = modification.read_file('temporary/miners_stake_amounts.json')
             for chosen_miner in randomly_chosen_miners:
                 stake = temp_file_py[chosen_miner.address]
                 if stake > biggest_stake:
                     biggest_stake = stake
                     final_chosen_miner = chosen_miner
-            for entity in the_miners_list:
+            for entity in simdata.miner_list:
                 entity.next_pos_block_from = final_chosen_miner.address
-            final_chosen_miner.build_block(numOfTXperBlock, the_miners_list, the_type_of_consensus,
-                                           blockchainFunction, expected_chain_length, None, chosen_consensus)
-            output.simulation_progress(counter, expected_chain_length)
+            final_chosen_miner.build_block(simdata)
+            output.simulation_progress(counter, simdata.expected_chain_length)
 
     def block_is_valid(self, type_of_consensus, new_block, top_block, next_pos_block_from, miner_list, delegates):
         condition_1 = new_block['Header']['hash'] == encryption_module.hashing_function(new_block['Body'])
@@ -144,15 +137,12 @@ class PoA(ConsensusAlgorithmBase):
         new_block['Header']['hash'] = encryption_module.hashing_function(new_block['Body'])
         return new_block
 
-    def miners_trigger(self, the_miners_list, the_type_of_consensus, expected_chain_length, Parallel_PoW_mining,
-                       numOfTXperBlock, blockchainFunction, poet_block_time, Asymmetric_key_length,
-                       number_of_DPoS_delegates, AI_assisted_mining_wanted, chosen_consensus):
-        for counter in range(expected_chain_length):
-            obj = random.choice(the_miners_list)
+    def miners_trigger(self, simdata):
+        for counter in range(simdata.expected_chain_length):
+            obj = random.choice(simdata.miner_list)
             if obj.local_mempool:
-                obj.build_block(numOfTXperBlock, the_miners_list, the_type_of_consensus,
-                                blockchainFunction, expected_chain_length, None, chosen_consensus)
-            output.simulation_progress(counter, expected_chain_length)
+                obj.build_block(simdata)
+            output.simulation_progress(counter, simdata.expected_chain_length)
 
     def block_is_valid(self, type_of_consensus, new_block, top_block, next_pos_block_from, miner_list, delegates):
         condition_1 = new_block['Body']['previous_hash'] == top_block['Header']['hash']
@@ -176,44 +166,40 @@ class PoET(ConsensusAlgorithmBase):
         new_block['Header']['PoET'] = ''
         return new_block
 
-    def miners_trigger(self, the_miners_list, the_type_of_consensus, expected_chain_length, Parallel_PoW_mining,
-                       numOfTXperBlock, blockchainFunction, poet_block_time, Asymmetric_key_length,
-                       number_of_DPoS_delegates, AI_assisted_mining_wanted, chosen_consensus):
+    def miners_trigger(self, simdata):
         start_time = time.time()
-        for obj in the_miners_list:
-            obj.waiting_times = PoET_server.generate_random_waiting_times(expected_chain_length, poet_block_time,
+        for obj in simdata.miner_list:
+            obj.waiting_times = PoET_server.generate_random_waiting_times(simdata.expected_chain_length, simdata.params.poet_block_time,
                                                                           obj.address)
-            private_key, public_key = encryption_module.generate_PKI_keys(Asymmetric_key_length, obj.address + '_key')
+            private_key, public_key = encryption_module.generate_PKI_keys(simdata.params.Asymmetric_key_length, obj.address + '_key')
         mining_processes = []
-        for counter in range(expected_chain_length):
-            least_waiting_time = poet_block_time
+        for counter in range(simdata.expected_chain_length):
+            least_waiting_time = simdata.params.poet_block_time
             least_waiting_time_for = []
-            for obj in the_miners_list:
+            for obj in simdata.miner_list:
                 if PoET_server.network_waiting_times[obj.address][counter + 1] < least_waiting_time:
                     least_waiting_time = PoET_server.network_waiting_times[obj.address][counter + 1]
-            for obj in the_miners_list:
+            for obj in simdata.miner_list:
                 if PoET_server.network_waiting_times[obj.address][counter + 1] == least_waiting_time:
                     least_waiting_time_for.append(obj.address)
             time.sleep(least_waiting_time)
-            if Parallel_PoW_mining:
+            if simdata.params.Parallel_PoW_mining:
                 # parallel approach
-                for obj in the_miners_list:
+                for obj in simdata.miner_list:
                     if obj.address in least_waiting_time_for:
                         process = Process(target=obj.build_block, args=(
-                            numOfTXperBlock, the_miners_list, the_type_of_consensus, blockchainFunction,
-                            expected_chain_length, None, chosen_consensus))
+                            simdata))
                         process.start()
                         mining_processes.append(process)
                 for process in mining_processes:
                     process.join()
             else:
-                for obj in the_miners_list:
+                for obj in simdata.miner_list:
                     if obj.address in least_waiting_time_for:
-                        obj.build_block(numOfTXperBlock, the_miners_list, the_type_of_consensus, blockchainFunction,
-                                        expected_chain_length, None, chosen_consensus)
-            for obj in the_miners_list:
+                        obj.build_block(simdata)
+            for obj in simdata.miner_list:
                 if obj.local_mempool:
-                    now_time_must_be = start_time + ((counter + 1) * poet_block_time)
+                    now_time_must_be = start_time + ((counter + 1) * simdata.params.poet_block_time)
                     difference = now_time_must_be - time.time()
                     if difference > 0:
                         time.sleep(difference)
@@ -247,29 +233,25 @@ class DPoS(ConsensusAlgorithmBase):
         new_block['Header']['dummy_new_proof'] = super().dummy_proof_generator_function(new_block)
         return new_block
 
-    def miners_trigger(self, the_miners_list, the_type_of_consensus, expected_chain_length, Parallel_PoW_mining,
-                       numOfTXperBlock, blockchainFunction, poet_block_time, Asymmetric_key_length,
-                       number_of_DPoS_delegates, AI_assisted_mining_wanted, chosen_consensus):
-        for counter in range(expected_chain_length):
-            votes_and_stakes = self.dpos_voting(the_miners_list)
-            selected_delegates = self.dpos_delegates_selection(votes_and_stakes, number_of_DPoS_delegates)
-            for entity in the_miners_list:
+    def miners_trigger(self, simdata):
+        for counter in range(simdata.expected_chain_length):
+            votes_and_stakes = self.dpos_voting(simdata.miner_list)
+            selected_delegates = self.dpos_delegates_selection(votes_and_stakes, simdata.params.number_of_DPoS_delegates)
+            for entity in simdata.miner_list:
                 entity.delegates = selected_delegates
             processes = []
-            for entity in the_miners_list:
+            for entity in simdata.miner_list:
                 if entity.address in entity.delegates:
-                    if Parallel_PoW_mining:
+                    if simdata.params.Parallel_PoW_mining:
                         process = Process(target=entity.build_block, args=(
-                            numOfTXperBlock, the_miners_list, the_type_of_consensus, blockchainFunction,
-                            expected_chain_length, None, chosen_consensus))
+                            simdata))
                         process.start()
                         processes.append(process)
                     else:
-                        entity.build_block(numOfTXperBlock, the_miners_list, the_type_of_consensus, blockchainFunction,
-                                           expected_chain_length, None, chosen_consensus)
+                        entity.build_block(simdata)
             for process in processes:
                 process.join()
-            output.simulation_progress(counter, expected_chain_length)
+            output.simulation_progress(counter, simdata.expected_chain_length)
 
     def block_is_valid(self, type_of_consensus, new_block, top_block, next_pos_block_from, miner_list, delegates):
         try:
@@ -336,11 +318,8 @@ class Dummy(ConsensusAlgorithmBase):
     # 4- the 'miners_trigger' function triggers the miners to start mining/minting new blocks.
     # add your own logic to this function for triggering miners,
     # see implemented CAs implementation for reference above --^
-    def miners_trigger(self, the_miners_list, the_type_of_consensus, expected_chain_length, Parallel_PoW_mining,
-                       numOfTXperBlock, blockchainFunction, poet_block_time, Asymmetric_key_length,
-                       number_of_DPoS_delegates, AI_assisted_mining_wanted, chosen_consensus):
-        super().trigger_dummy_miners(the_miners_list, numOfTXperBlock, the_type_of_consensus, blockchainFunction,
-                             expected_chain_length)
+    def miners_trigger(self, simdata):
+        super().trigger_dummy_miners(simdata)
 
     # 5- Add miner validation strategy in a 'block_is_valid' function.
     # The function MUST return either True or False.
