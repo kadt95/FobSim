@@ -12,24 +12,20 @@ import main
 def run_main():
     main.user_input()
     main.initiate_network()
-    main.type_of_consensus = main.new_consensus_module.choose_consensus()
-    main.trans_delay = main.define_trans_delay(main.blockchainPlacement)
-    main.miner_list = main.initiate_miners()
-    main.AI_assisted_mining_wanted = main.give_miners_authorization(main.miner_list, main.type_of_consensus)
+    main.simdata.consensus_setup()
+    main.simdata.trans_delay = main.define_trans_delay(main.simdata.blockchainPlacement)
+    main.simdata.miner_list = main.initiate_miners()
+    main.simdata.AI_assisted_mining_wanted = main.give_miners_authorization(main.simdata.miner_list)
     main.inform_miners_of_users_wallets()
-    main.blockchain.stake(main.miner_list, main.type_of_consensus)
-    main.initiate_genesis_block(main.AI_assisted_mining_wanted)
+    main.blockchain.stake(main.simdata.miner_list, main.simdata.type_of_consensus)
+    main.initiate_genesis_block(main.simdata.AI_assisted_mining_wanted)
     main.send_tasks_to_BC()
     main.time_start = main.time.time()
-    if main.blockchainFunction == 2:
-        main.expected_chain_length = main.ceil((main.num_of_users_per_fog_node * main.NumOfTaskPerUser * main.NumOfFogNodes))
-    main.new_consensus_module.miners_trigger(main.miner_list, main.type_of_consensus, main.expected_chain_length,
-                                             main.Parallel_PoW_mining,
-                                             main.numOfTXperBlock, main.blockchainFunction, main.poet_block_time,
-                                             main.Asymmetric_key_length,
-                                             main.number_of_DPoS_delegates, main.AI_assisted_mining_wanted)
-    main.blockchain.award_winning_miners(len(main.miner_list), main.miner_list)
-    main.blockchain.fork_analysis(main.miner_list)
+    if main.simdata.blockchainFunction == 2:
+        main.simdata.expected_chain_length = main.ceil((main.simdata.params.num_of_users_per_fog_node * main.simdata.params.NumOfTaskPerUser * main.simdata.params.NumOfFogNodes))
+    main.simdata.chosen_consensus.miners_trigger_start(main.simdata)
+    main.blockchain.award_winning_miners(len(main.simdata.miner_list), main.simdata.miner_list)
+    main.blockchain.fork_analysis(main.simdata.miner_list)
     main.output.finish()
     main.store_fog_data()
     main.elapsed_time = main.time.time() - main.time_start
