@@ -1,0 +1,137 @@
+[33mcommit 1fbdbcd6b74c06711da1e76e81cf5ea894207b3f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrefactor[m[33m)[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Mon Apr 27 14:16:09 2026 +0200
+
+    fix E2E tests for refactored version
+
+[33mcommit 70c249c71a7ea69ef5103b0ab89b69da69cbd466[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Sun Apr 26 17:59:27 2026 +0200
+
+    refactor simulation parameters and data handling
+
+[33mcommit 311b5a3ccf292b39a33ce02eb1e80590ed5bdf93[m[33m ([m[1;31morigin/refactor[m[33m)[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Mon Apr 13 21:15:34 2026 +0200
+
+    refactor consensus algorithms
+
+[33mcommit 039f51cad497d1073135a5ba17ce2bfc16db91be[m[33m ([m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Mon Mar 30 22:04:45 2026 +0200
+
+    revert test_E2E.py changes
+
+[33mcommit d1b4b5ad59f98c851a22d811e68e1675b889c460[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Mon Mar 30 21:13:15 2026 +0200
+
+    add and change .gitignore files
+
+[33mcommit e38583e23c0208206786e5b1256763c168935a05[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Mon Mar 30 20:52:19 2026 +0200
+
+    fix deepreload in E2E tests
+
+[33mcommit 9d41fb9fef482670ea3893ca335d8e9222573cd1[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Mon Mar 30 20:42:45 2026 +0200
+
+    Update test.yml, add requirements.txt
+
+[33mcommit 4ee4391526b8c82430405007a6b00a1399888d8b[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Mon Mar 30 20:26:47 2026 +0200
+
+    Update test.yml
+
+[33mcommit d922b72d74457bb61b8b59489bb64c13b23a5099[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Mon Mar 30 20:23:29 2026 +0200
+
+    update test_E2E.py
+
+[33mcommit 6052ec4932b992080aca412da5395ff4c2b860d7[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Sun Mar 29 18:55:24 2026 +0200
+
+    Fix duplicate transactions
+
+[33mcommit 19212ccf596209c52e7606bf1ae54f907ea4c762[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Mon Mar 30 20:17:49 2026 +0200
+
+    Update test.yml
+
+[33mcommit b0f3da99d769729215cef5ef51479a952b367501[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Mon Mar 30 20:00:58 2026 +0200
+
+    Create test.yml
+
+[33mcommit 0dbe6b8c7b82b132dc8d2514c01ac4566743e51e[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Tue Mar 10 09:56:24 2026 +0100
+
+    Partial fix duplicate transactions
+
+[33mcommit 7b46094ededb1914d029404bab02b6aadafe495e[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Sun Mar 1 18:31:43 2026 +0100
+
+    Fix PoS infinite loop
+
+[33mcommit ebf1d0aecfecf9ac7830dfb944e0ecc7dfdd4962[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Fri Jan 9 18:06:46 2026 +0100
+
+    fix PoET related bugs
+
+[33mcommit 8651a2ba990173019b2f4cdb4463a4aab9fded61[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Thu Jan 8 16:31:09 2026 +0100
+
+    fix Computational services giving incorrect results
+
+[33mcommit 9b55bbc51e4dfd38a0c0ad4aef1d7085651e957f[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Thu Jan 8 16:23:03 2026 +0100
+
+    fix PoA incorrect block building
+
+[33mcommit 60fc374080384fe0a15ab0fe29330565a863b5a8[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Thu Jan 8 16:09:59 2026 +0100
+
+    add E2E tests
+
+[33mcommit ab495ab1d25629cc281520c346ca26935ab9a55d[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Sun Nov 9 10:18:13 2025 +0100
+
+    add final main unit tests
+
+[33mcommit 1395cb84f9682301a953c2789832bf6424ef7a19[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Mon Oct 27 17:58:13 2025 +0100
+
+    add initial unit tests for main.py
+
+[33mcommit 1af784d41f3e0271e3a278e186a9e23af866ae84[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Sun Oct 12 16:26:15 2025 +0200
+
+    add missing argument to build_block in trigger_poet_miners
+
+[33mcommit caf5a27e72e682a74fc8005147cd1cf6dc4e5d24[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Mon Sep 29 18:00:50 2025 +0200
+
+    update README
+
+[33mcommit b8188659b9ceb0bd16d40819d59ac23c063bb983[m
+Author: kadt95 <232221269+kadt95@users.noreply.github.com>
+Date:   Mon Sep 29 18:00:38 2025 +0200
+
+    initial commit/import FobSim
