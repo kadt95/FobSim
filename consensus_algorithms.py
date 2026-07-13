@@ -31,7 +31,7 @@ class PoW(ConsensusAlgorithmBase):
             if simdata.params.Parallel_PoW_mining:
                 # parallel approach
                 process = Process(target=obj.build_block, args=(
-                    simdata))
+                    simdata,))
                 process.start()
                 mining_processes.append(process)
             else:
@@ -188,7 +188,7 @@ class PoET(ConsensusAlgorithmBase):
                 for obj in simdata.miner_list:
                     if obj.address in least_waiting_time_for:
                         process = Process(target=obj.build_block, args=(
-                            simdata))
+                            simdata,))
                         process.start()
                         mining_processes.append(process)
                 for process in mining_processes:
@@ -244,7 +244,7 @@ class DPoS(ConsensusAlgorithmBase):
                 if entity.address in entity.delegates:
                     if simdata.params.Parallel_PoW_mining:
                         process = Process(target=entity.build_block, args=(
-                            simdata))
+                            simdata,))
                         process.start()
                         processes.append(process)
                     else:
