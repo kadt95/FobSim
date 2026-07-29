@@ -5,19 +5,8 @@ import shutil
 import time
 import multiprocessing
 
-keychain = multiprocessing.Queue()
 
-
-def get_key():
-    while not keychain.empty():
-        keychain.get()
-
-
-def return_key():
-    keychain.put('KEY')
-
-
-def initiate_files(gossip_activated):
+def initiate_files(simdata):
     for filename in os.listdir('temporary'):
         if filename == ".gitignore":
             continue
@@ -29,55 +18,30 @@ def initiate_files(gossip_activated):
                 shutil.rmtree(file_path)
         except Exception as e:
             print('Failed to delete %s. Reason: %s' % (file_path, e))
-    write_file('temporary/confirmation_log.json', {})
-    write_file('temporary/miner_wallets_log.json', {})
-    if gossip_activated:
-        write_file('temporary/longest_chain.json', {'chain': {}, 'from': 'Miner_1'})
+    simdata.locks["confirmation_log"] = multiprocessing.Lock()
+    write_file('temporary/confirmation_log.json', {},simdata.locks["confirmation_log"])
+    simdata.locks["miner_wallets_log"] = multiprocessing.Lock()
+    write_file('temporary/miner_wallets_log.json', {},simdata.locks["miner_wallets_log"])
+    if simdata.params.gossip_activated:
+        simdata.locks["longest_chain"] = multiprocessing.Lock()
+        write_file('temporary/longest_chain.json', {'chain': {}, 'from': 'Miner_1'},simdata.locks["longest_chain"])
 
 
-def read_file(file_path):
-    while keychain.empty():
-        time.sleep(0.1)
-    get_key()
-    while True:
-        try:
+def read_file(file_path,lock):
+    with lock:
             with open(file_path, 'r') as f:
                 file = json.load(f)
-            return_key()
             return file
-        except Exception as e:
-            pass
 
 
-def write_file(file_path, contents):
-    while keychain.empty():
-        time.sleep(0.1)
-    get_key()
-    while True:
-        try:
+def write_file(file_path, contents, lock):
+    with lock:
             with open(file_path, 'w') as f:
                 json.dump(contents, f, indent=4)
-            return_key()
-            break
-        except Exception as e:
-            pass
 
-
-def rewrite_file(file_path, new_version):
-    while keychain.empty():
-        time.sleep(0.1)
-    get_key()
-    while True:
-        try:
-            os.remove(file_path)
-        except Exception as e:
-            try:
-                with open(file_path, "w") as f:
-                    json.dump(new_version, f, indent=4)
-                return_key()
-                break
-            except Exception as e:
-                pass
-
-
-return_key()
+def rewrite_file(file_path, new_version, lock):
+    with lock:
+        with open(file_path, "w") as f:
+            json.dump(new_version, f, indent=4)
+            f.flush()
+            os.fsync(f.fileno())

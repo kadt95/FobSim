@@ -1,7 +1,7 @@
+from contextlib import nullcontext
 from math import ceil
+import modification
 
-from consensus_algorithm_base import ConsensusAlgorithmBase
-import consensus_algorithms
 
 
 
@@ -22,6 +22,7 @@ class SimData:
             self.poet_block_time = data['poet_block_time']
             self.Asymmetric_key_length = data['Asymmetric_key_length']
             self.number_of_DPoS_delegates = data['Num_of_DPoS_delegates']
+            self.initial_wallet_value = data['miners_initial_wallet_value']
     def __init__(self, rawparameters):
         self.params  = SimData.Parameters(rawparameters)
         self.list_of_end_users = []
@@ -35,13 +36,18 @@ class SimData:
         self.expected_chain_length = ceil((self.params.num_of_users_per_fog_node * self.params.NumOfTaskPerUser * self.params.NumOfFogNodes) / self.params.numOfTXperBlock)
         self.trans_delay = 0
         self.user_informed = False
-        self.cons_algorithms = sorted(ConsensusAlgorithmBase.__subclasses__(), key=lambda ca: int(ca.orderNo))
+        self.cons_algorithms = None
         self.type_of_consensus = None
         self.chosen_consensus = None
         self.miner_list = None
         self.AI_assisted_mining_wanted = None
+        self.locks = {}
 
-    def consensus_setup(self):
-        self.type_of_consensus = ConsensusAlgorithmBase.choose_consensus(self.cons_algorithms)
+    def consensus_setup(self,cabase):
+        self.cons_algorithms = sorted(cabase.__subclasses__(), key=lambda ca: int(ca.orderNo))
+        self.type_of_consensus = cabase.choose_consensus(self.cons_algorithms)
         self.chosen_consensus = self.cons_algorithms[self.type_of_consensus - 1]()
         self.chosen_consensus.prepare_necessary_files()
+
+data = modification.read_file("Sim_parameters.json",nullcontext())
+simdata = SimData(data)

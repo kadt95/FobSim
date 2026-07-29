@@ -1,9 +1,10 @@
 import random
+from contextlib import nullcontext
 from random import randrange
 import output
 import modification
 
-data = modification.read_file("Sim_parameters.json")
+data = modification.read_file("Sim_parameters.json",nullcontext())
 
 
 class User:

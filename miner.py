@@ -61,9 +61,9 @@ class Miner:
 
     def abstract_block_building(self, transactions, simdata):
         if simdata.blockchainFunction == 3:
-            transactions = self.validate_transactions(transactions, "generator")
+            transactions = self.validate_transactions(transactions, "generator", simdata)
         if self.gossiping:
-            self.gossip(simdata.blockchainFunction, simdata.miner_list)
+            self.gossip(simdata.blockchainFunction, simdata.miner_list, simdata)
         new_block = simdata.chosen_consensus.generate_new_block_start(transactions, self.address,
                                                             self.top_block['Header']['hash'], simdata.type_of_consensus,
                                                             simdata.AI_assisted_mining_wanted, self.adversary)
@@ -75,14 +75,14 @@ class Miner:
     def receive_new_block(self, new_block, simdata):
         block_already_received = False
         self.successful_gossip=False
-        local_chain_temporary_file = modification.read_file(str("temporary/" + self.address + "_local_chain.json"))
+        local_chain_temporary_file = modification.read_file(str("temporary/" + self.address + "_local_chain.json"),simdata.locks[f"{self.address}_local_chain"])
         # print("a new block is received from " + str(new_block['generator_id']))
         condition_1 = (len(local_chain_temporary_file) == 0) and (new_block['Header']['generator_id'] == 'The Network')
         if condition_1:
-            self.add(new_block, simdata.blockchainFunction, simdata.expected_chain_length, simdata.miner_list)
+            self.add(new_block,simdata)
         else:
             if self.gossiping:
-                self.gossip(simdata.blockchainFunction, simdata.miner_list)
+                self.gossip(simdata.blockchainFunction, simdata.miner_list, simdata)
             list_of_hashes_in_local_chain = []
             for key in local_chain_temporary_file:
                 read_hash = local_chain_temporary_file[key]['Header']['hash']
@@ -92,7 +92,7 @@ class Miner:
                     break
             if not block_already_received:
                 if simdata.chosen_consensus.block_is_valid(simdata.type_of_consensus, new_block, self.top_block, self.next_pos_block_from, simdata.miner_list, self.delegates) or (self.successful_gossip and self.top_block==new_block):
-                    self.add(new_block, simdata.blockchainFunction, simdata.expected_chain_length, simdata.miner_list)
+                    self.add(new_block, simdata)
                     time.sleep(self.trans_delay)
                     if simdata.blockchainFunction == 2:
                         tx = new_block["Body"]["transactions"][1].split()[-1]
@@ -110,8 +110,8 @@ class Miner:
                         if elem.address in self.neighbours:
                             elem.receive_new_block(new_block, simdata)
 
-    def validate_transactions(self, list_of_new_transactions, miner_role):
-        user_wallets_temporary_file = modification.read_file(str("temporary/" + self.address + "_users_wallets.json"))
+    def validate_transactions(self, list_of_new_transactions, miner_role, simdata):
+        user_wallets_temporary_file = modification.read_file(str("temporary/" + self.address + "_users_wallets.json"),simdata.locks[f"{self.address}_users_wallets"])
         if list_of_new_transactions:
             for key in user_wallets_temporary_file:
                 for transaction in list_of_new_transactions:
@@ -130,29 +130,29 @@ class Miner:
         if miner_role == "generator":
             return list_of_new_transactions
         if miner_role == "receiver":
-            modification.rewrite_file(str("temporary/" + self.address + "_users_wallets.json"), user_wallets_temporary_file)
+            modification.rewrite_file(str("temporary/" + self.address + "_users_wallets.json"), user_wallets_temporary_file,simdata.locks[f"{self.address}_users_wallets"])
             return True
 
-    def add(self, block, blockchain_function, expected_chain_length, list_of_miners):
+    def add(self, block, simdata):
         ready = False
-        local_chain_temporary_file = modification.read_file("temporary/" + self.address + "_local_chain.json")
+        local_chain_temporary_file = modification.read_file("temporary/" + self.address + "_local_chain.json",simdata.locks[f"{self.address}_local_chain"])
         if len(local_chain_temporary_file) == 0:
             ready = True
         else:
-            condition = blockchain_function == 3 and self.validate_transactions(block['Body']['transactions'], "receiver")
-            if blockchain_function != 3 or condition:
+            condition = simdata.blockchainFunction == 3 and self.validate_transactions(block['Body']['transactions'], "receiver", simdata)
+            if simdata.blockchainFunction != 3 or condition:
                 if block['Body']['previous_hash'] == self.top_block['Header']['hash']:
-                    blockchain.report_a_successful_block_addition(block['Header']['generator_id'], block['Header']['hash'])
+                    blockchain.report_a_successful_block_addition(block['Header']['generator_id'], block['Header']['hash'], simdata)
                     # output.block_success_addition(self.address, block['generator_id'])
                     ready = True
         if ready:
             block['Header']['blockNo'] = len(local_chain_temporary_file)
             self.top_block = block
             local_chain_temporary_file[str(len(local_chain_temporary_file))] = block
-            modification.rewrite_file(str("temporary/" + self.address + "_local_chain.json"), local_chain_temporary_file)
-            self.remove_confirmed_txs_from_local_mempool(block,blockchain_function)
+            modification.rewrite_file(str("temporary/" + self.address + "_local_chain.json"), local_chain_temporary_file,simdata.locks[f"{self.address}_local_chain"])
+            self.remove_confirmed_txs_from_local_mempool(block,simdata.blockchainFunction)
             if self.gossiping:
-                self.update_global_longest_chain(local_chain_temporary_file, blockchain_function, list_of_miners)
+                self.update_global_longest_chain(local_chain_temporary_file, simdata.blockchainFunction, simdata.miner_list, simdata)
 
     def remove_confirmed_txs_from_local_mempool(self, confirmed_bock,blockchain_function):
         if confirmed_bock["Header"]["generator_id"] != "The Network":
@@ -169,25 +169,25 @@ class Miner:
             except Exception as e:
                 pass
 
-    def gossip(self, blockchain_function, list_of_miners):
-        local_chain_temporary_file = modification.read_file(str("temporary/" + self.address + "_local_chain.json"))
-        temporary_global_longest_chain = modification.read_file('temporary/longest_chain.json')
+    def gossip(self, blockchain_function, list_of_miners, simdata):
+        local_chain_temporary_file = modification.read_file(str("temporary/" + self.address + "_local_chain.json"),simdata.locks[f"{self.address}_local_chain"])
+        temporary_global_longest_chain = modification.read_file('temporary/longest_chain.json',simdata.locks["longest_chain"])
         condition_1 = len(temporary_global_longest_chain['chain']) > len(local_chain_temporary_file)
-        condition_2 = self.global_chain_is_confirmed_by_majority(temporary_global_longest_chain['chain'], len(list_of_miners))
+        condition_2 = self.global_chain_is_confirmed_by_majority(temporary_global_longest_chain['chain'], len(list_of_miners), simdata)
         if condition_1 and condition_2:
             confirmed_chain = temporary_global_longest_chain['chain']
             confirmed_chain_from = temporary_global_longest_chain['from']
-            modification.rewrite_file(str("temporary/" + self.address + "_local_chain.json"), confirmed_chain)
+            modification.rewrite_file(str("temporary/" + self.address + "_local_chain.json"), confirmed_chain, simdata.locks[f"{self.address}_local_chain"])
             self.top_block = confirmed_chain[str(len(confirmed_chain) - 1)]
             self.successful_gossip=True
             output.local_chain_is_updated(self.address, len(confirmed_chain))
             if blockchain_function == 3:
-                user_wallets_temp_file = modification.read_file(str("temporary/" + confirmed_chain_from + "_users_wallets.json"))
-                modification.rewrite_file(str("temporary/" + self.address + "_users_wallets.json"), user_wallets_temp_file)
+                user_wallets_temp_file = modification.read_file(str("temporary/" + confirmed_chain_from + "_users_wallets.json"),simdata.locks[f"{confirmed_chain_from}_users_wallets"])
+                modification.rewrite_file(str("temporary/" + self.address + "_users_wallets.json"), user_wallets_temp_file, simdata.locks[f"{self.address}_users_wallets"])
 
-    def global_chain_is_confirmed_by_majority(self, global_chain, no_of_miners):
+    def global_chain_is_confirmed_by_majority(self, global_chain, no_of_miners, simdata):
         chain_is_confirmed = True
-        temporary_confirmations_log = modification.read_file('temporary/confirmation_log.json')
+        temporary_confirmations_log = modification.read_file('temporary/confirmation_log.json',simdata.locks["confirmation_log"])
         for block in global_chain:
             condition_0 = block != '0'
             if condition_0:
@@ -202,12 +202,12 @@ class Miner:
                         break
         return chain_is_confirmed
 
-    def update_global_longest_chain(self, local_chain_temporary_file, blockchain_function, list_of_miners):
-        temporary_global_longest_chain = modification.read_file('temporary/longest_chain.json')
+    def update_global_longest_chain(self, local_chain_temporary_file, blockchain_function, list_of_miners, simdata):
+        temporary_global_longest_chain = modification.read_file('temporary/longest_chain.json',simdata.locks["longest_chain"])
         if len(temporary_global_longest_chain['chain']) < len(local_chain_temporary_file):
             temporary_global_longest_chain['chain'] = local_chain_temporary_file
             temporary_global_longest_chain['from'] = self.address
-            modification.rewrite_file('temporary/longest_chain.json', temporary_global_longest_chain)
+            modification.rewrite_file('temporary/longest_chain.json', temporary_global_longest_chain,simdata.locks["longest_chain"])
         else:
             if len(temporary_global_longest_chain['chain']) > len(local_chain_temporary_file) and self.gossiping:
-                self.gossip(blockchain_function, list_of_miners)
+                self.gossip(blockchain_function, list_of_miners, simdata)

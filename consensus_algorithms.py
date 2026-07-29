@@ -1,3 +1,4 @@
+import multiprocessing
 from multiprocessing import Process
 import random
 import time
@@ -8,6 +9,7 @@ import encryption_module
 import modification
 import output
 from consensus_algorithm_base import ConsensusAlgorithmBase
+from Sim_data import simdata
 
 # NON-MODIFIABLE PART:
 
@@ -24,14 +26,13 @@ class PoW(ConsensusAlgorithmBase):
         new_block = self.pow_mining(new_block, AI_assisted_mining_wanted, is_adversary)
         return new_block
 
-    def miners_trigger(self, simdata):
+    def miners_trigger(self):
         mining_processes = []
         for counter in range(simdata.expected_chain_length):
             obj = random.choice(simdata.miner_list)
             if simdata.params.Parallel_PoW_mining:
                 # parallel approach
-                process = Process(target=obj.build_block, args=(
-                    simdata,))
+                process = Process(target=obj.build_block, args=(simdata,))
                 process.start()
                 mining_processes.append(process)
             else:
@@ -80,14 +81,15 @@ class PoS(ConsensusAlgorithmBase):
     orderNo = "2"
 
     def prepare_necessary_files(self):
-        modification.write_file('temporary/miners_stake_amounts.json', {})
+        simdata.locks["miners_stake_amounts"] = multiprocessing.Lock()
+        modification.write_file('temporary/miners_stake_amounts.json', {},simdata.locks["miners_stake_amounts"])
 
     def generate_new_block(self, transactions, generator_id, previous_hash, type_of_consensus,
                            AI_assisted_mining_wanted, is_adversary, new_block):
         new_block['Header']['hash'] = encryption_module.hashing_function(new_block['Body'])
         return new_block
 
-    def miners_trigger(self, simdata):
+    def miners_trigger(self):
         for counter in range(simdata.expected_chain_length):
             randomly_chosen_miners = []
             x = int(round((len(simdata.miner_list) / 2), 0))
@@ -106,7 +108,7 @@ class PoS(ConsensusAlgorithmBase):
                 break
             biggest_stake = 0
             final_chosen_miner = simdata.miner_list[0]
-            temp_file_py = modification.read_file('temporary/miners_stake_amounts.json')
+            temp_file_py = modification.read_file('temporary/miners_stake_amounts.json',simdata.locks["miners_stake_amounts"])
             for chosen_miner in randomly_chosen_miners:
                 stake = temp_file_py[chosen_miner.address]
                 if stake > biggest_stake:
@@ -137,7 +139,7 @@ class PoA(ConsensusAlgorithmBase):
         new_block['Header']['hash'] = encryption_module.hashing_function(new_block['Body'])
         return new_block
 
-    def miners_trigger(self, simdata):
+    def miners_trigger(self):
         for counter in range(simdata.expected_chain_length):
             obj = random.choice(simdata.miner_list)
             if obj.local_mempool:
@@ -166,7 +168,7 @@ class PoET(ConsensusAlgorithmBase):
         new_block['Header']['PoET'] = ''
         return new_block
 
-    def miners_trigger(self, simdata):
+    def miners_trigger(self):
         start_time = time.time()
         for obj in simdata.miner_list:
             obj.waiting_times = PoET_server.generate_random_waiting_times(simdata.expected_chain_length, simdata.params.poet_block_time,
@@ -225,7 +227,8 @@ class DPoS(ConsensusAlgorithmBase):
     orderNo = "5"
 
     def prepare_necessary_files(self):
-        modification.write_file('temporary/miners_stake_amounts.json', {})
+        simdata.locks["miners_stake_amounts"] = multiprocessing.Lock()
+        modification.write_file('temporary/miners_stake_amounts.json', {}, simdata.locks["miners_stake_amounts"])
 
     def generate_new_block(self, transactions, generator_id, previous_hash, type_of_consensus,
                            AI_assisted_mining_wanted, is_adversary, new_block):
@@ -233,7 +236,7 @@ class DPoS(ConsensusAlgorithmBase):
         new_block['Header']['dummy_new_proof'] = super().dummy_proof_generator_function(new_block)
         return new_block
 
-    def miners_trigger(self, simdata):
+    def miners_trigger(self):
         for counter in range(simdata.expected_chain_length):
             votes_and_stakes = self.dpos_voting(simdata.miner_list)
             selected_delegates = self.dpos_delegates_selection(votes_and_stakes, simdata.params.number_of_DPoS_delegates)
@@ -265,7 +268,7 @@ class DPoS(ConsensusAlgorithmBase):
         return False
 
     def dpos_voting(self, the_miners_list):
-        temp_file_py = modification.read_file('temporary/miner_wallets_log.json')
+        temp_file_py = modification.read_file('temporary/miner_wallets_log.json',simdata.locks["miner_wallets_log"])
         votes_and_stakes = {}
         for miner in the_miners_list:
             votes_and_stakes[miner.address] = {}
@@ -318,8 +321,8 @@ class Dummy(ConsensusAlgorithmBase):
     # 4- the 'miners_trigger' function triggers the miners to start mining/minting new blocks.
     # add your own logic to this function for triggering miners,
     # see implemented CAs implementation for reference above --^
-    def miners_trigger(self, simdata):
-        super().trigger_dummy_miners(simdata)
+    def miners_trigger(self):
+        super().trigger_dummy_miners()
 
     # 5- Add miner validation strategy in a 'block_is_valid' function.
     # The function MUST return either True or False.

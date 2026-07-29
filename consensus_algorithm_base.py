@@ -4,9 +4,8 @@ import encryption_module
 import time
 import copy
 import random
-
+from Sim_data import simdata
 from abc import abstractmethod, ABC
-
 
 
 class ConsensusAlgorithmBase(ABC):
@@ -48,21 +47,21 @@ class ConsensusAlgorithmBase(ABC):
                            is_adversary, new_block):
         pass
 
-    def miners_trigger_start(self, simdata):
+    def miners_trigger_start(self):
 
         output.mempool_info(mempool.MemPool)
         for obj in simdata.miner_list:
             obj.local_mempool = copy.deepcopy(mempool.MemPool)
 
-        self.miners_trigger(simdata)
+        self.miners_trigger()
 
     @abstractmethod
-    def miners_trigger(self, simdata):
+    def miners_trigger(self):
         pass
 
 
     @staticmethod
-    def trigger_dummy_miners(simdata):
+    def trigger_dummy_miners():
         counter = -1
         for obj in simdata.miner_list:
             if obj.local_mempool:

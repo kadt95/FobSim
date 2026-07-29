@@ -1,3 +1,4 @@
+import multiprocessing
 import Fog
 import end_user
 import miner
@@ -9,14 +10,11 @@ import time
 import modification
 from consensus_algorithm_base import ConsensusAlgorithmBase
 import consensus_algorithms
-from Sim_data import SimData
-
-data = modification.read_file("Sim_parameters.json")
-simdata = SimData(data)
+from Sim_data import simdata
 
 
 def user_input():
-    modification.initiate_files(simdata.params.gossip_activated)
+    modification.initiate_files(simdata)
     choose_functionality()
     choose_placement()
 
@@ -25,7 +23,7 @@ def choose_functionality():
     while True:
         output.choose_functionality()
         simdata.blockchainFunction = input()
-        if simdata.blockchainFunction in simdata.blockchain_functions:
+        if simdata.blockchainFunction in simdata.blockchainFunction:
             simdata.blockchainFunction = int(simdata.blockchainFunction)
             break
         else:
@@ -76,10 +74,11 @@ def initiate_miners():
         for i in range(simdata.params.NumOfMiners):
             the_miners_list.append(miner.Miner(i + 1, simdata.trans_delay, simdata.params.gossip_activated))
     for entity in the_miners_list:
-        modification.write_file("temporary/" + entity.address + "_local_chain.json", {})
-        miner_wallets_log_py = modification.read_file("temporary/miner_wallets_log.json")
-        miner_wallets_log_py[str(entity.address)] = data['miners_initial_wallet_value']
-        modification.rewrite_file("temporary/miner_wallets_log.json", miner_wallets_log_py)
+        simdata.locks[f"{entity.address}_local_chain"] = multiprocessing.Lock()
+        modification.write_file("temporary/" + entity.address + "_local_chain.json", {},simdata.locks[f"{entity.address}_local_chain"])
+        miner_wallets_log_py = modification.read_file("temporary/miner_wallets_log.json",simdata.locks["miner_wallets_log"])
+        miner_wallets_log_py[str(entity.address)] = simdata.params.initial_wallet_value
+        modification.rewrite_file("temporary/miner_wallets_log.json", miner_wallets_log_py,simdata.locks["miner_wallets_log"])
     print('Miners have been initiated..')
     connect_miners(the_miners_list)
     output.miners_are_up()
@@ -208,28 +207,28 @@ def inform_miners_of_users_wallets():
                            'wallet_value': user.wallet}
             user_wallets[str(user.addressParent) + '.' + str(user.addressSelf)] = wallet_info
         for i in range(len(simdata.miner_list)):
-            modification.rewrite_file(str("temporary/" + simdata.miner_list[i].address + "_users_wallets.json"), user_wallets)
+            modification.rewrite_file(str("temporary/" + simdata.miner_list[i].address + "_users_wallets.json"), user_wallets,simdata.locks[f"{simdata.miner_list[i].address}_users_wallets"])
 
 
 if __name__ == '__main__':
     user_input()
     initiate_network()
-    simdata.consensus_setup()
+    simdata.consensus_setup(ConsensusAlgorithmBase)
     simdata.trans_delay = define_trans_delay(simdata.blockchainPlacement)
     simdata.miner_list = initiate_miners()
     simdata.AI_assisted_mining_wanted = give_miners_authorization(simdata.miner_list)
     inform_miners_of_users_wallets()
-    blockchain.stake(simdata.miner_list, simdata.type_of_consensus)
+    blockchain.stake(simdata.miner_list, simdata.type_of_consensus, simdata)
     initiate_genesis_block(simdata.AI_assisted_mining_wanted)
     send_tasks_to_BC()
     time_start = time.time()
     if simdata.blockchainFunction == 2:
         simdata.expected_chain_length = ceil((simdata.params.num_of_users_per_fog_node * simdata.params.NumOfTaskPerUser * simdata.params.NumOfFogNodes))
 
-    simdata.chosen_consensus.miners_trigger_start(simdata)
+    simdata.chosen_consensus.miners_trigger_start()
 
-    blockchain.award_winning_miners(len(simdata.miner_list), simdata.miner_list)
-    blockchain.fork_analysis(simdata.miner_list)
+    blockchain.award_winning_miners(len(simdata.miner_list), simdata.miner_list, simdata)
+    blockchain.fork_analysis(simdata.miner_list, simdata)
     output.finish()
     store_fog_data()
     elapsed_time = time.time() - time_start
