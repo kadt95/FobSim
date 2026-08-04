@@ -42,6 +42,7 @@ class SimData:
         self.miner_list = None
         self.AI_assisted_mining_wanted = None
         self.locks = {}
+        self.mempool = []
 
     def consensus_setup(self,cabase):
         self.cons_algorithms = sorted(cabase.__subclasses__(), key=lambda ca: int(ca.orderNo))

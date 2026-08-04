@@ -1,7 +1,7 @@
 import random
 from contextlib import nullcontext
 import output
-import mempool
+from Sim_data import simdata
 import modification
 
 data = modification.read_file("Sim_parameters.json",nullcontext())
@@ -26,7 +26,7 @@ class Fog:
         if temporary_task[-1] in [1, 3, 4]:
             for task in self.tasks:
                 if self.STOR_PLC == 1:
-                    mempool.MemPool.append(task)
+                    simdata.mempool.append(task)
                 else:
                     self.local_storage.append(task)
         if temporary_task[-1] == 2:
@@ -40,6 +40,6 @@ class Fog:
                         self.local_storage.append(produced_transaction)
                         break
                     elif letter in ['/', '*']:
-                        mempool.MemPool.append(task)
+                        simdata.mempool.append(task)
                         break
 

@@ -1,4 +1,3 @@
-import mempool
 import output
 import encryption_module
 import time
@@ -49,9 +48,9 @@ class ConsensusAlgorithmBase(ABC):
 
     def miners_trigger_start(self):
 
-        output.mempool_info(mempool.MemPool)
+        output.mempool_info(simdata.mempool)
         for obj in simdata.miner_list:
-            obj.local_mempool = copy.deepcopy(mempool.MemPool)
+            obj.local_mempool = copy.deepcopy(simdata.mempool)
 
         self.miners_trigger()
 
