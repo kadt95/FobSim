@@ -29,16 +29,16 @@ def report_a_successful_block_addition(winning_miner, hash_of_added_block, simda
     modification.rewrite_file("temporary/confirmation_log.json", temporary_confirmation_log,simdata.locks["confirmation_log"])
 
 
-def award_winning_miners(num_of_miners, list_of_miners, simdata):
+def award_winning_miners(simdata):
     final_confirmation_log = modification.read_file("temporary/confirmation_log.json",simdata.locks["confirmation_log"])
     miner_final_wallets_log_py = modification.read_file("temporary/miner_wallets_log.json",simdata.locks["miner_wallets_log"])
     number_of_blocks_generated_by_adversary_miners = 0
     for key in final_confirmation_log:
-        if final_confirmation_log[key]['votes'] > int(num_of_miners/2):
+        if final_confirmation_log[key]['votes'] > int(len(simdata.miner_list)/2):
             for key1 in miner_final_wallets_log_py:
                 if key1 == final_confirmation_log[key]['winning_miner']:
                     miner_final_wallets_log_py[key1] += mining_award
-                    if generator_is_adversary(key1, list_of_miners):
+                    if generator_is_adversary(key1, simdata.miner_list):
                         number_of_blocks_generated_by_adversary_miners += 1
     try:
         print('Success Score for Adversary Portion (if any)= ' +
@@ -57,9 +57,9 @@ def generator_is_adversary(generator, list_of_miners):
             print(e)
 
 
-def stake(list_of_miners, num_of_consensus, simdata):
-    if num_of_consensus == 2:
-        for miner in list_of_miners:
+def stake(simdata):
+    if simdata.type_of_consensus == 2:
+        for miner in simdata.miner_list:
             temp_miner_wallets_log_py = modification.read_file('temporary/miner_wallets_log.json',simdata.locks["miner_wallets_log"])
             temp_miners_stake_amounts_py = modification.read_file('temporary/miners_stake_amounts.json',simdata.locks["miners_stake_amounts"])
             temp_miners_stake_amounts_py[miner.address] = random.randint(0, temp_miner_wallets_log_py[miner.address])
@@ -68,9 +68,9 @@ def stake(list_of_miners, num_of_consensus, simdata):
             modification.rewrite_file('temporary/miners_stake_amounts.json', temp_miners_stake_amounts_py, simdata.locks["miners_stake_amounts"])
 
 
-def fork_analysis(list_of_miners, simdata):
+def fork_analysis(simdata):
     chain_versions = []
-    for entity in list_of_miners:
+    for entity in simdata.miner_list:
         temp_path = "temporary/" + entity.address + "_local_chain.json"
         chain = modification.read_file(temp_path, simdata.locks[f"{entity.address}_local_chain"])
         h = hashlib.sha256()

@@ -218,7 +218,7 @@ if __name__ == '__main__':
     simdata.miner_list = initiate_miners()
     simdata.AI_assisted_mining_wanted = give_miners_authorization(simdata.miner_list)
     inform_miners_of_users_wallets()
-    blockchain.stake(simdata.miner_list, simdata.type_of_consensus, simdata)
+    blockchain.stake(simdata)
     initiate_genesis_block(simdata.AI_assisted_mining_wanted)
     send_tasks_to_BC()
     time_start = time.time()
@@ -227,8 +227,8 @@ if __name__ == '__main__':
 
     simdata.chosen_consensus.miners_trigger_start()
 
-    blockchain.award_winning_miners(len(simdata.miner_list), simdata.miner_list, simdata)
-    blockchain.fork_analysis(simdata.miner_list, simdata)
+    blockchain.award_winning_miners(simdata)
+    blockchain.fork_analysis(simdata)
     output.finish()
     store_fog_data()
     elapsed_time = time.time() - time_start
