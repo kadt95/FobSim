@@ -126,7 +126,7 @@ class Miner:
                     if miner_role == "generator" and key == (str(transaction[1]) + "." + str(transaction[2])):
                         if user_wallets_temporary_file[key]['wallet_value'] < transaction[0]:
                             output.illegal_tx(transaction, user_wallets_temporary_file[key]['wallet_value'])
-                            del transaction
+                            list_of_new_transactions.remove(transaction)
         if miner_role == "generator":
             return list_of_new_transactions
         if miner_role == "receiver":
