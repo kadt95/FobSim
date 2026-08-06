@@ -1,10 +1,8 @@
 import sys
 import os
-import pytest
+from types import SimpleNamespace
 from unittest.mock import patch, Mock, MagicMock
 import copy
-
-from pywin.mfc.object import Object
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..","..")))
 import blockchain
@@ -18,7 +16,7 @@ fake_confirmation_log={
         "votes": 2
         }
     }
-fake_simdata=Object()
+fake_simdata=SimpleNamespace()
 fake_simdata.locks=({
     "confirmation_log": "fake_lock",
     "miner_wallets_log": "fake_lock",
