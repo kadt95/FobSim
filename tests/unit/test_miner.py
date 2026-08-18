@@ -47,12 +47,12 @@ def test_continue_building_block(mock_block_info,mock_simdata,mock_abstract_bb,m
     if blockchainfunction == 2:
         mock_abstract_bb.return_value = {'Body': {'transactions': ['End-user address: TEST', 'Requested computational task: 1*1', 'Result: 1', 'miner: TEST']}}
         test_miner.local_mempool = [["TEST1","TEST", "1*1"],["TEST2","TEST", "2/2"],["TEST3","TEST", "3-3"],["TEST4","TEST", "4+4"]]
-        test_miner.build_block(mock_simdata)
+        test_miner.continue_building_block(mock_simdata)
         assert test_miner.local_mempool == [["TEST2","TEST", "2/2"],["TEST3","TEST", "3-3"],["TEST4","TEST", "4+4"]]
     if blockchainfunction != 2:
         mock_accumulate_txs.return_value = [[1, 1], [2, 1], [3, 1]]
         test_miner.local_mempool = [[1, 1], [2, 1], [3, 1], [4, 1], [5, 1]]
-        test_miner.build_block(mock_simdata)
+        test_miner.continue_building_block(mock_simdata)
         assert test_miner.local_mempool == [[4, 1], [5, 1]]
 
 
