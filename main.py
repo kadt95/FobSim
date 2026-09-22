@@ -207,6 +207,7 @@ def inform_miners_of_users_wallets():
                            'wallet_value': user.wallet}
             user_wallets[str(user.addressParent) + '.' + str(user.addressSelf)] = wallet_info
         for i in range(len(simdata.miner_list)):
+            simdata.locks[f"{simdata.miner_list[i].address}_users_wallets"]=multiprocessing.Lock()
             modification.rewrite_file(str("temporary/" + simdata.miner_list[i].address + "_users_wallets.json"), user_wallets,simdata.locks[f"{simdata.miner_list[i].address}_users_wallets"])
 
 
