@@ -1,5 +1,5 @@
 import time
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import sys
 import os
 import pytest
@@ -25,7 +25,7 @@ def test_choose_functionality(mock_choose_functionality, mock_input, capsys):
     main.choose_functionality()
     mock_choose_functionality.assert_called()
     assert "Input is incorrect, try again..!" in capsys.readouterr().out
-    assert main.blockchainFunction == 1
+    assert main.simdata.blockchainFunction == 1
 
 
 @patch("builtins.input", side_effect=["bad input", "2"])
@@ -34,7 +34,7 @@ def test_choose_placement(mock_choose_placement, mock_input, capsys):
     main.choose_placement()
     mock_choose_placement.assert_called()
     assert "Input is incorrect, try again..!" in capsys.readouterr().out
-    assert main.blockchainPlacement == 2
+    assert main.simdata.blockchainPlacement == 2
 
 
 @patch("builtins.input", side_effect=["example input", "example_input2", "done"])
@@ -47,26 +47,27 @@ def test_choose_placement(mock_choose_placement, mock_input, capsys):
 @pytest.mark.parametrize("func", [1, 2, 3, 4])
 def test_initiate_network(mock_fog, mock_users_fogs, mock_GDPR, mock_user_reminder, mock_user_ct, mock_user_st,
                           mock_input, capsys, func):
-    main.list_of_end_users.clear()
-    main.fogNodes.clear()
+    main.simdata.list_of_end_users.clear()
+    main.simdata.fogNodes.clear()
     main.blockchainFunction = func
     main.initiate_network()
-    assert mock_fog.call_count == main.NumOfFogNodes
-    assert len(main.list_of_end_users) == main.NumOfFogNodes * main.num_of_users_per_fog_node
+    assert mock_fog.call_count == main.simdata.params.NumOfFogNodes
+    assert len(main.simdata.list_of_end_users) == main.simdata.params.NumOfFogNodes * main.simdata.params.num_of_users_per_fog_node
     mock_users_fogs.assert_called_once()
     readerout = capsys.readouterr()
-    if main.blockchainFunction == 4:
+    if main.simdata.blockchainFunction == 4:
         mock_GDPR.assert_called_once()
         assert "If you don't want other attributes to be added to end_users, input: done\n" in readerout.out
-        for user in main.list_of_end_users:
+        for user in main.simdata.list_of_end_users:
             assert "example input" in user.identity_added_attributes.keys()
             assert "example_input2" in user.identity_added_attributes.keys()
         mock_user_reminder.assert_called()
-    assert mock_user_ct.call_count == len(main.list_of_end_users)
-    assert mock_user_st.call_count == len(main.list_of_end_users)
+    assert mock_user_ct.call_count == len(main.simdata.list_of_end_users)
+    assert mock_user_st.call_count == len(main.simdata.list_of_end_users)
     assert "had sent its tasks to the fog layer" in readerout.out
 
 
+@patch("main.simdata")
 @patch("main.output.miners_are_up")
 @patch("main.connect_miners")
 @patch("main.modification.rewrite_file")
@@ -75,15 +76,18 @@ def test_initiate_network(mock_fog, mock_users_fogs, mock_GDPR, mock_user_remind
 @patch("main.miner.Miner")
 @pytest.mark.parametrize("placement", [1, 2])
 def test_inititate_miners(mock_miner, mock_write_file, mock_read_file, mock_rewrite_file, mock_connect_miners,
-                          mock_miners_up, capsys, placement):
-    main.blockchainPlacement = placement
+                          mock_miners_up,mock_simdata, capsys, placement):
+    mock_simdata.locks["miner_wallets_log"] = "test_lock"
+    mock_simdata.params.NumOfFogNodes = 1
+    mock_simdata.params.NumOfMiners = 1
+    main.simdata.blockchainPlacement = placement
     miners_list = main.initiate_miners()
-    if main.blockchainPlacement == 1:
-        assert len(miners_list) == main.NumOfFogNodes
-        assert mock_miner.call_count == main.NumOfFogNodes
-    if main.blockchainPlacement == 2:
-        assert len(miners_list) == main.NumOfMiners
-        assert mock_miner.call_count == main.NumOfMiners
+    if main.simdata.blockchainPlacement == 1:
+        assert len(miners_list) == main.simdata.params.NumOfFogNodes
+        assert mock_miner.call_count == main.simdata.params.NumOfFogNodes
+    if main.simdata.blockchainPlacement == 2:
+        assert len(miners_list) == main.simdata.params.NumOfMiners
+        assert mock_miner.call_count == main.simdata.params.NumOfMiners
     assert mock_write_file.call_count == len(miners_list)
     assert mock_read_file.call_count == len(miners_list)
     assert mock_rewrite_file.call_count == len(miners_list)
@@ -98,9 +102,9 @@ def test_inititate_miners(mock_miner, mock_write_file, mock_read_file, mock_rewr
 def test_define_trans_delay(layer):
     transmission_delay = main.define_trans_delay(layer)
     if layer == 1:
-        assert transmission_delay == main.delay_between_fog_nodes
+        assert transmission_delay == main.simdata.params.delay_between_fog_nodes
     if layer == 2:
-        assert transmission_delay == main.delay_between_end_users
+        assert transmission_delay == main.simdata.params.delay_between_end_users
     assert isinstance(transmission_delay, int)
 
 
@@ -135,10 +139,12 @@ def test_create_components(ran):
 @pytest.mark.parametrize("placement, wanted, automatic",
                          [(1, True, None), (1, False, None), (3, None, True), (3, None, False)])
 def test_give_miners_authorization(mock_AI_mining, mock_auth_trigger, mock_input, capsys, placement, wanted, automatic):
+    main.simdata.type_of_consensus = placement
+    main.simdata.params.Automatic_PoA_miners_authorization = automatic
     miners_list = create_faux_miners(10)
     mock_AI_mining.return_value = (wanted, 0.5)
     main.Automatic_PoA_miners_authorization = automatic
-    auth = main.give_miners_authorization(miners_list, placement)
+    auth = main.give_miners_authorization(miners_list)
     if placement == 1:
         mock_AI_mining.assert_called_once()
         readerout = capsys.readouterr()
@@ -150,44 +156,48 @@ def test_give_miners_authorization(mock_AI_mining, mock_auth_trigger, mock_input
         if automatic:
             for minerr in miners_list:
                 assert minerr.isAuthorized
-                assert minerr in main.list_of_authorized_miners
+                assert minerr in main.simdata.list_of_authorized_miners
         else:
             mock_auth_trigger.assert_called_once()
             for minerr in miners_list:
                 if int(minerr.address[-1]) in mock_input.side_effect:
                     assert minerr.address is not "Miner_" + "done"
                     assert minerr.isAuthorized
-                    assert minerr in main.list_of_authorized_miners
+                    assert minerr in main.simdata.list_of_authorized_miners
 
 
 @patch("main.output.genesis_block_generation")
-@patch.object(main.miner.Miner, "receive_new_block")
 @patch("main.output.block_info")
-@patch("main.new_consensus_module.generate_new_block")
-@patch("main.initiate_miners", return_value=create_faux_miners(10))
+@patch("main.simdata")
 @pytest.mark.parametrize("AI", [True, False])
-def test_initiate_genesis_block(mock_miners_list, mock_generate_block, mock_block_info, mock_receive,
+def test_initiate_genesis_block(mock_simdata, mock_block_info,
                                 mock_genesis_block_gen, AI):
-    main.miner_list = mock_miners_list.return_value
+    mock_simdata.miner_list = [MagicMock(spec = miner.Miner) for _ in range(5)]
+    for i in range (len(mock_simdata.miner_list)):
+        mock_simdata.miner_list[i].address = i
     main.type_of_consensus = 1
     main.initiate_genesis_block(AI)
-    mock_generate_block.assert_called_once()
+    mock_simdata.chosen_consensus.generate_new_block_start.assert_called_once()
     mock_block_info.assert_called_once()
-    assert mock_receive.call_count == len(mock_miners_list.return_value)
+    called = 0
+    for m in mock_simdata.miners_list:
+        called += m.receive_new_block.call_count
+    assert called == len(mock_simdata.miners_list)
     mock_genesis_block_gen.assert_called_once()
 
 
 def test_send_tasks_to_BC():
     main.send_tasks_to_BC()
-    assert main.fogNodes[0].send_tasks_to_BC.call_count == len(main.fogNodes)
+    assert main.simdata.fogNodes[0].send_tasks_to_BC.call_count == len(main.simdata.fogNodes)
 
 
 def test_store_fog_data():
-    main.fogNodes = [main.Fog.Fog(i) for i in range(1, 11)]
-    for node in main.fogNodes:
-        node.local_storage = [f"test_{node.address}"]
+    main.simdata.fogNodes = [main.Fog.Fog(i) for i in range(1, 11)]
+    for i in range(len(main.simdata.fogNodes)):
+        main.simdata.fogNodes[i].address = i
+        main.simdata.fogNodes[i].local_storage = [f"test_{main.simdata.fogNodes[i].address}"]
     main.store_fog_data()
-    for node in main.fogNodes:
+    for node in main.simdata.fogNodes:
         file = f'temporary/Fog_node_' + str(node.address) + '.txt'
         assert os.path.isfile(file)
         assert os.path.getmtime(file) > time.time() - 5
@@ -199,10 +209,13 @@ def test_store_fog_data():
 @patch("main.end_user.User")
 @pytest.mark.parametrize("mock_bc_func", [1, 3])
 def test_inform_miners_of_users_wallets(mock_user, mock_rewrite_file, mock_bc_func):
-    main.list_of_end_users.clear()
-    main.list_of_end_users=[main.end_user.User(i,i-1) for i in range(15)]
-    main.blockchainFunction=mock_bc_func
+    main.simdata.list_of_end_users.clear()
+    main.simdata.list_of_end_users=[main.end_user.User(i,i-1) for i in range(15)]
+    main.simdata.miner_list = [MagicMock(spec = miner.Miner) for _ in range(5)]
+    for i in range (len(main.simdata.miner_list)):
+        main.simdata.miner_list[i].address = str(i)
+    main.simdata.blockchainFunction=mock_bc_func
     main.inform_miners_of_users_wallets()
     if mock_bc_func == 3:
-        assert mock_user.call_count == len(main.list_of_end_users)
-        assert mock_rewrite_file.call_count == len(main.miner_list)
+        assert mock_user.call_count == len(main.simdata.list_of_end_users)
+        assert mock_rewrite_file.call_count == len(main.simdata.miner_list)
