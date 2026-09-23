@@ -23,7 +23,7 @@ def choose_functionality():
     while True:
         output.choose_functionality()
         simdata.blockchainFunction = input()
-        if simdata.blockchainFunction in simdata.blockchainFunction:
+        if simdata.blockchainFunction in simdata.blockchain_functions:
             simdata.blockchainFunction = int(simdata.blockchainFunction)
             break
         else:
